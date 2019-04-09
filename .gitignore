@@ -1,6 +1,7 @@
 .vscode
-lab4*
+lab6*
 
 a.out*
+*.gch
 
 .DS_Store

@@ -6,61 +6,48 @@ using namespace dict;
 
 
 /****************************************************************/
-nodo* deleteMin (nodo* sottoAlbero, bool dir) { // dir = { false: rimuovendo a sinistra, true: rimuovendo a destra }
-    if (sottoAlbero->sinistra == nullptr && sottoAlbero->destra == nullptr)
-        return sottoAlbero;
-    
-    if (dir) { // Cerchiamo a destra
-        if (sottoAlbero->destra == nullptr)
-            return sottoAlbero;
-        else
-            return deleteMin(sottoAlbero->destra, dir);
-    } else { // Cerchiamo a sinistra
-        if (sottoAlbero->sinistra == nullptr)
-            return sottoAlbero;
-        else
-            return deleteMin(sottoAlbero->sinistra, dir);
-    }
+nodo* minoreDeiMaggiori (nodo* node) { // Cerco la foglia piu' a sinistra
+    if (node->sinistra != nullptr)
+        return minoreDeiMaggiori(node->sinistra);
+
+    return node;
 }
 
-Error pippo (nodo* sottoAlbero, nodo* padre) {
-    if (padre->sinistra == sottoAlbero) {
-        padre->sinistra = deleteMin(sottoAlbero, false);
-        padre->sinistra = sottoAlbero->sinistra;
-    } else {
-        padre->destra = deleteMin(sottoAlbero, true);
-        padre->destra = sottoAlbero->destra;
+nodo* deleteNode (nodo* sottoAlbero, Key k) {
+    if (sottoAlbero == nullptr) // Se non esiste con la chaive
+        return nullptr; // Restituisco nullptr (che verra' interpretato come errore)
+  
+    if (k < sottoAlbero->elem.key) // Se la chiave e' minore
+        sottoAlbero->sinistra = deleteNode(sottoAlbero->sinistra, k); // Continuo a sinistra
+    else if (k > sottoAlbero->elem.key) // Se la chiave e' maggiore
+        sottoAlbero->destra = deleteNode(sottoAlbero->destra, k); // Continuo a destra
+    else { // Se ho trovato la chiave
+        if (sottoAlbero->sinistra == NULL) { // Se non ha un figlio a sinistra
+            struct nodo* temp = sottoAlbero->destra;
+            delete sottoAlbero; // Elimino il nodo dalla memoria
+            return temp; // Restituisco la parte destra
+        } else if (sottoAlbero->destra == NULL) { // Se non ha un figlio a destra
+            struct nodo* temp = sottoAlbero->sinistra; 
+            delete sottoAlbero; // Elimino il nodo dalla memoria
+            return temp; // Restituisco la parte sinistra
+        } else { // Se ha entrambi i figli
+            nodo* temp = minoreDeiMaggiori(sottoAlbero->destra);  // Prendo il figlio minore nel sotto albero di destra (il nodo successivo)
+            sottoAlbero->elem = temp->elem; // Copio il contenuto del nodo
+            sottoAlbero->destra = deleteNode(sottoAlbero->destra, temp->elem.key); // Elimino il nodo successivo (perche' ho spostato il suo contenuto nel nodo corrente)
+        }
     }
 
-    /*
-    if (sottoAlbero->sinistra == nullptr && sottoAlbero->destra == nullptr) // Nessun figlio (quindi foglia)
-        lato = nullptr;
-    else if (sottoAlbero->sinistra != nullptr && sottoAlbero->destra != nullptr) { // Due figli
-
-    } else if (sottoAlbero->sinistra != nullptr) // 1 figlio (sinistra)
-        lato = sottoAlbero->sinistra;
-    else if (sottoAlbero->destra != nullptr) // 1 figlio (destra)
-        lato = sottoAlbero->destra;
-    */
-   
-    delete sottoAlbero;
-}
-
-Error deleteRicorsiva (nodo* &sottoAlbero, Key k) {
-    if (sottoAlbero->sinistra != nullptr && sottoAlbero->sinistra->elem.key == k) {
-        pippo(sottoAlbero->sinistra, sottoAlbero);
-    } else if (sottoAlbero->destra != nullptr && sottoAlbero->destra->elem.key == k) {
-        pippo(sottoAlbero->destra, sottoAlbero);
-    } else {
-        if (sottoAlbero->sinistra != nullptr)
-            deleteRicorsiva(sottoAlbero->sinistra, k);
-        if (sottoAlbero->destra != nullptr)
-            deleteRicorsiva(sottoAlbero->destra, k);
-    }
-}
+    return sottoAlbero;
+} 
 
 Error dict::deleteElem(const Key k, Dictionary& s) {
-    deleteRicorsiva(s, k);
+    nodo* newsottoAlbero = deleteNode(s, k);
+
+    if (newsottoAlbero == nullptr)
+        return FAIL;
+    s = newsottoAlbero;
+
+    return OK;
 }
 
 
@@ -108,8 +95,7 @@ Dictionary readFromStream(istream& str)
 
 /****************************************************************/
 // Inizializzazione della lista con creazione del nodo sentinella; obbligatorio dopo la dichiarazione di una lista
-Dictionary dict::createEmptyDict()
-{
+Dictionary dict::createEmptyDict() {
     return nullptr;
 }
 
@@ -155,21 +141,17 @@ Error dict::insertElem(const Key k, const Value v,  Dictionary& s)
 
 /****************************************************************/
 Value searchRicorsiva (nodo* sottoAlbero, Key k) {
-    if (sottoAlbero == nullptr) {
+    if (sottoAlbero == nullptr)
         return emptyValue;
-    }
 
     Key currK = sottoAlbero->elem.key;
-    if (currK == k) {
+    if (currK == k)
         return sottoAlbero->elem.value;
-    }
 
-    if (k < currK) {
+    if (k < currK)
         return searchRicorsiva(sottoAlbero->sinistra, k);
-    } 
-    if (k > currK) {
+    if (k > currK)
         return searchRicorsiva(sottoAlbero->destra, k);
-    }
 }
 
 Value dict::search(const Key k, const Dictionary& s)
